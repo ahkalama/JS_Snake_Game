@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game</title>
+    <style>
+        canvas {
+            border: 1px solid rgb(0, 0, 0);
+            background-color: #000000;
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="1500" height="1000"></canvas>
+    <script>
+        // Canvas elementini al
+        const canvas = document.getElementById('gameCanvas');
+        // Canvas üzerinde çizim yapmak için bir 2D bağlamı al
+        const ctx = canvas.getContext('2d');
+        // Yılanın başlangıç boyutu ve pozisyonu
+        let snakeSize = 30;
+        let snakeX = canvas.width / 3;
+        let snakeY = canvas.height / 3;
+        // Yılanın hareket yönü ve hızı
+        let dx = snakeSize / 3;
+        let dy = 0;
+        // Yemek pozisyonu ve boyutu
+        let foodX;
+        let foodY;
+        let foodSize = 15;
+        // Skor
+        let score = 0;
+        // Yılanın kuyruğu
+        let tail = [];
+        // Oyunun durumu (paused)
+        let gamePaused = false;
+
+        // Klavye olaylarını dinle
+        document.addEventListener('keydown', changeDirection);
+        // Pencere boyutu değiştiğinde canvas'ı yeniden boyutlandır
+        window.addEventListener('resize', resizeCanvas);
+
+        // Canvas'ı pencere boyutuna göre yeniden boyutlandır
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            snakeX = canvas.width / 3;
+            snakeY = canvas.height / 3;
+            generateFood();
+        }
+
+        // Yılanın hareket yönünü değiştir
+        function changeDirection(event) {
+            // Klavye tuşlarının kodları
+            const LEFT_KEY = 65;
+            const RIGHT_KEY = 68;
+            const UP_KEY = 87;
+            const DOWN_KEY = 83;
+            const ESC_KEY = 27;
+            const ENTER_KEY = 13;
+
+            // Basılan tuşun kodunu al
+            const keyPressed = event.keyCode;
+
+            // Tuşa göre yönü değiştir
+            if (keyPressed === LEFT_KEY && dx === 0) {
+                dx = -snakeSize / 3;
+                dy = 0;
+            }
+            if (keyPressed === RIGHT_KEY && dx === 0) {
+                dx = snakeSize / 3;
+                dy = 0;
+            }
+            if (keyPressed === UP_KEY && dy === 0) {
+                dy = -snakeSize / 3;
+                dx = 0;
+            }
+            if (keyPressed === DOWN_KEY && dy === 0) {
+                dy = snakeSize / 3;
+                dx = 0;
+            }
+            // Escape tuşuna basıldığında oyunu duraklat veya devam ettir
+            if (keyPressed === ESC_KEY) {
+                gamePaused = !gamePaused;
+                if (gamePaused)
+                {
+                    drawPauseScreen();
+                }
+                else if (!gamePaused)
+                {
+                    draw();
+                }
+            }
+        }
+
+        // Yemek oluştur
+        function generateFood() {
+            foodX = Math.floor(Math.random() * canvas.width / snakeSize) * snakeSize;
+            foodY = Math.floor(Math.random() * canvas.height / snakeSize) * snakeSize;
+        }
+
+        // Yemeği çiz
+        function drawFood() {
+            ctx.fillStyle = 'blue';
+            ctx.fillRect(foodX, foodY, foodSize, foodSize);
+        }
+
+        // Skoru çiz
+        function drawScore() {
+            ctx.fillStyle = 'white';
+            ctx.font = '24px Arial';
+            ctx.fillText('Score: ' + score, 10, 30);
+        }
+
+        // Duraklama ekranını çiz
+        function drawPauseScreen() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
+            ctx.font = '48px Arial';
+            ctx.fillText('Paused', canvas.width / 2 - 80, canvas.height / 2);
+        }
+
+        // Oyunu çiz
+        function draw() {
+            if (gamePaused) {
+                return;
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Yılanın kuyruğunu çiz
+            for (let i = 0; i < tail.length; i++) {
+                ctx.fillStyle = 'white';
+                ctx.fillRect(tail[i].x, tail[i].y, snakeSize, snakeSize);
+                if (tail[i].x === snakeX && tail[i].y === snakeY) {
+                    gameOver();
+                    return;
+                }
+            }
+
+            // Kuyruğa yeni parça ekle ve fazla parçaları kuyruktan çıkar
+            tail.push({ x: snakeX, y: snakeY });
+            while (tail.length > score + 1) {
+                tail.shift();
+            }
+
+            // Yılan yemeğe çarparsa skoru artır ve yeni yemek oluştur
+            if (Math.abs(snakeX - foodX) < snakeSize && Math.abs(snakeY - foodY) < snakeSize) {
+                score++;
+                generateFood();
+            }
+
+            // Yemeği çiz
+            drawFood();
+            // Skoru çiz
+            drawScore();
+
+            // Yılanın yeni pozisyonunu hesapla
+            snakeX += dx;
+            snakeY += dy;
+
+            // Yılanın ekran dışına çıktığında diğer taraftan devam etmesini sağla
+            if (snakeX >= canvas.width) {
+                snakeX = 0;
+            } else if (snakeX < 0) {
+                snakeX = canvas.width - snakeSize;
+            }
+
+            if (snakeY >= canvas.height) {
+                snakeY = 0;
+            } else if (snakeY < 0) {
+                snakeY = canvas.height - snakeSize;
+            }
+
+            // Oyunu yeniden çiz
+            requestAnimationFrame(draw);
+        }
+
+        // Oyunun bitiş ekranını çiz
+        function gameOver() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'whitek'; // Burada 'whitek' yerine 'white' olması gerekiyor
+            ctx.font = '48px Arial';
+            ctx.fillText('Game Over', canvas.width / 2 - 120, canvas.height / 2);
+            ctx.font = '24px Arial';
+            ctx.fillText('Press Enter to Restart', canvas.width / 2 - 111, canvas.height / 2 + 50);
+            document.removeEventListener('keydown', changeDirection);
+            document.addEventListener('keydown', restartGame);
+        }
+
+        // Oyunu yeniden başlat
+        function restartGame(event) {
+            const ENTER_KEY = 13;
+            const keyPressed = event.keyCode;
+            if (keyPressed === ENTER_KEY) {
+                document.removeEventListener('keydown', restartGame);
+                document.addEventListener('keydown', changeDirection);
+                tail = [];
+                snakeX = canvas.width / 3;
+                snakeY = canvas.height / 3;
+                score = 0;
+                dx = snakeSize / 3;
+                dy = 0;
+                generateFood();
+                draw();
+            }
+        }
+
+        // Canvas'ı pencere boyutuna göre yeniden boyutlandır ve oyunu başlat
+        resizeCanvas();
+        draw();
+    </script>
+</body>
+</html>
